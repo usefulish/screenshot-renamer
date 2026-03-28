@@ -17,7 +17,7 @@ Drop a screenshot on your Desktop — it gets renamed from `Screenshot 2026-03-2
 A file watcher monitors your Desktop. When a new screenshot appears it runs a bash script that:
 
 1. **OCR first** — uses macOS Vision to extract any text from the screenshot. Fast, free, no API call needed.
-2. **AI vision fallback** — if OCR finds no text (diagrams, photos, UI without labels), it sends the image to the AI API for a visual description.
+2. **AI vision fallback** — if OCR finds fewer than 10 characters (diagrams, photos, UI without labels), it sends the image to the AI API for a visual description.
 3. **Slug generation** — the extracted text or description is sent to the API to generate a clean kebab-case slug.
 4. **Rename + archive** — file is renamed with a date prefix and moved to `~/Screenshots Archive/`.
 
@@ -38,7 +38,7 @@ After:  2026-03-24-apple-frames-api-shortcut-workflow.png
 
 OCR path (text found): ~200ms — no API call, Vision runs locally  
 Vision path (no text): ~800ms — one API call  
-Cost: fractions of a cent per image, only when OCR finds nothing
+Cost: fractions of a cent per image, only when OCR finds fewer than 10 characters
 
 **vs. Automator/Shortcuts:** The previous standard approach — chaining Automator folder actions with Shortcuts and Apple Intelligence — was slow (3-10 seconds per image), flaky (dependent on Apple Intelligence availability and the ChatGPT app being open), and broke silently when either wasn't ready. This script runs in under a second, has no app dependencies, and starts automatically at login via Hazelnut's daemon. It's also significantly simpler to set up: one TOML rule and one `chmod +x`.
 
@@ -199,7 +199,7 @@ These are findings from real usage — worth knowing before you start tweaking:
 
 **300px is the optimal `MAX_IMAGE_PX`** for the vision path. Large enough for Claude to read UI elements and understand context, small enough to keep base64 payloads fast. Going larger doesn't meaningfully improve slug quality.
 
-**OCR is fast enough that it's always worth trying first.** Even on screenshots with sparse text, Vision usually finds something useful. The API call is only triggered when OCR genuinely finds nothing.
+**OCR is fast enough that it's always worth trying first.** Even on screenshots with sparse text, Vision usually finds something useful. The API call is only triggered when OCR finds fewer than 10 characters.
 
 **OpenAI performs more consistently than Claude for pure visual content** (diagrams, photos with no text). If you find the vision fallback generating generic slugs, swap `MODEL` on the vision path to an OpenAI model — you'll need an OpenAI API key but the script supports it.
 
@@ -210,7 +210,7 @@ These are findings from real usage — worth knowing before you start tweaking:
 **Watch a different folder** — update `path` in your Hazelnut config  
 **Change the archive destination** — update `destination` in the Move rule  
 **Archive rule matches `.png` only** — if you need to handle other formats (jpg, webp, etc.), update the `name_regex` in the Move rule to `^\\d{4}-\\d{2}-\\d{2}.*\\.(png|jpg|jpeg|webp)$`  
-**Disable the vision fallback** — comment out the vision section; files with no OCR text will get a `screenshot` slug  
+**Disable the vision fallback** — comment out the vision section; files with fewer than 10 OCR characters will get a `screenshot` slug  
 **Use a different AI provider** — the slug generation and vision calls use standard chat completions format; swap the endpoint and model  
 **API key** — stored in `~/.screenshot-rename.env`, never in the script itself
 
@@ -226,9 +226,6 @@ The base64-encoded image is too large for shell argument passing. Lower `MAX_IMA
 
 **Script not triggering**  
 Make sure the script is executable: `chmod +x ~/Scripts/screenshot-rename.sh`. Check Hazelnut is running: `hazelnutd status`.
-
-**Extension showing in Brave (macOS)**  
-`localhost` on modern macOS resolves to `::1` (IPv6) rather than `127.0.0.1`. Make sure both are in your host permissions.
 
 ---
 
