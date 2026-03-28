@@ -149,11 +149,14 @@ fi
 
 # ── Step 5: Build new filename ────────────────────────────────
 dir=$(dirname "$inputFile")
-newFile="$dir/${datePrefix}-${slug}.${ext}"
+archiveDir="$HOME/Screenshots Archive"
+newBase="${datePrefix}-${slug}.${ext}"
+newFile="$dir/$newBase"
 
 counter=1
-while [ -f "$newFile" ]; do
-  newFile="$dir/${datePrefix}-${slug}-${counter}.${ext}"
+while [ -f "$newFile" ] || [ -f "$archiveDir/$newBase" ]; do
+  newBase="${datePrefix}-${slug}-${counter}.${ext}"
+  newFile="$dir/$newBase"
   ((counter++))
 done
 
