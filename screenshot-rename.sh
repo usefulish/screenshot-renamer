@@ -68,8 +68,13 @@ ocrText=$(osascript -e "
   return ocrResult
 " 2>/dev/null || echo "")
 
+
+# Clean up any stale temp files from previous failed runs
+rm -f ~/.cache/screenshot-request-*.json
+
 # ── Step 2: Build request ─────────────────────────────────────
-tmpRequest=$(mktemp "$HOME/.cache/screenshot-request-XXXXXX.json")
+tmpRequest=$(mktemp ~/.cache/screenshot-request-XXXXXX.json)
+
 
 if [ -n "$ocrText" ] && [ ${#ocrText} -gt 10 ]; then
   # Text found — send OCR text only (cheaper, faster, no image needed)
